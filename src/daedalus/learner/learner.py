@@ -415,9 +415,10 @@ class Learner:
         stream_callback: Callable[[str], None] | None = None,
         tool_callback: Callable[[str, str, dict, str | None, str | None], None] | None = None,
         explorer_context: str | None = None,
+        context_usage_callback: Callable[[int, int], None] | None = None,
     ) -> LearnerFeedback:
         """Analyze a failed trace using an iterative tool-calling loop."""
-        return self._analyze_trace(task_dir, program, mode="failure", stream_callback=stream_callback, tool_callback=tool_callback, explorer_context=explorer_context)
+        return self._analyze_trace(task_dir, program, mode="failure", stream_callback=stream_callback, tool_callback=tool_callback, explorer_context=explorer_context, context_usage_callback=context_usage_callback)
 
     def analyze_success(
         self,
@@ -426,9 +427,10 @@ class Learner:
         stream_callback: Callable[[str], None] | None = None,
         tool_callback: Callable[[str, str, dict, str | None, str | None], None] | None = None,
         explorer_context: str | None = None,
+        context_usage_callback: Callable[[int, int], None] | None = None,
     ) -> LearnerFeedback:
         """Analyze a successful trace for optimization opportunities."""
-        return self._analyze_trace(task_dir, program, mode="success", stream_callback=stream_callback, tool_callback=tool_callback, explorer_context=explorer_context)
+        return self._analyze_trace(task_dir, program, mode="success", stream_callback=stream_callback, tool_callback=tool_callback, explorer_context=explorer_context, context_usage_callback=context_usage_callback)
 
     def _analyze_trace(
         self,
@@ -438,6 +440,7 @@ class Learner:
         stream_callback: Callable[[str], None] | None = None,
         tool_callback: Callable[[str, str, dict, str | None, str | None], None] | None = None,
         explorer_context: str | None = None,
+        context_usage_callback: Callable[[int, int], None] | None = None,
     ) -> LearnerFeedback:
         """Core tool-calling loop for single-trace analysis."""
         program_text = _program_to_summary(program) if program else None
@@ -490,6 +493,12 @@ class Learner:
 
             summarize_and_compact(messages, self._gateway)
             prune_old_images(messages)
+
+            if context_usage_callback:
+                from daedalus.llm.context import estimate_token_count, get_context_config
+                used = estimate_token_count(messages)
+                max_tokens = get_context_config().max_context_tokens
+                context_usage_callback(used, max_tokens)
 
             try:
                 response = self._gateway.complete(

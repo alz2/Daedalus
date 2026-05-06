@@ -175,6 +175,7 @@ export interface AgentState {
   attempt: number;
   error: string | null;
   showConfig: boolean;
+  contextUsage: { used: number; max: number } | null;
 }
 
 export const DEFAULT_CONFIG: DaedalusConfig = {

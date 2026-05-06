@@ -40,6 +40,8 @@ _KEY_ALIASES = {
     "control": "ctrl",
     "shift": "shift",
     "alt": "alt",
+    "option": "alt",
+    "opt": "alt",
     "meta": "super",
     "super": "super",
     "win": "super",

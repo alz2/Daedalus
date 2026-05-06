@@ -184,6 +184,9 @@ class FrontendBridge:
     def emit_explorer_progress(self, current: int, total: int) -> None:
         self.emit_event("explorer_progress", {"current": current, "total": total})
 
+    def emit_context_usage(self, used_tokens: int, max_tokens: int) -> None:
+        self.emit_event("context_usage", {"used_tokens": used_tokens, "max_tokens": max_tokens})
+
     def emit_executor_progress(self, current: int, total: int) -> None:
         self.emit_event("executor_progress", {"current": current, "total": total})
 

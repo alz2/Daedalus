@@ -580,6 +580,10 @@ def cmd_run(
         except Exception:
             pass
 
+        def _context_usage(used: int, max_tokens: int) -> None:
+            if bridge:
+                bridge.emit_context_usage(used, max_tokens)
+
         # Step 0: Strategy phase — subtask decomposition only (no skill synthesis).
         # Skipped when explorer is active since exploration provides richer context.
         if mode in ("learn", "explore"):
@@ -707,6 +711,7 @@ def cmd_run(
                     progress_callback=_explorer_progress,
                     stream_callback=_stream_thinking if bridge else None,
                     tool_callback=_tool_callback if bridge else None,
+                    context_usage_callback=_context_usage if bridge else None,
                     solve_mode=(mode == "explore"),
                 )
 
@@ -1117,6 +1122,7 @@ def cmd_run(
                         stream_callback=_success_learner_stream if bridge else None,
                         tool_callback=_success_tool_callback if bridge else None,
                         explorer_context=memory_context,
+                        context_usage_callback=_context_usage if bridge else None,
                     )
                     console.print(f"[bold]Learner:[/bold] {feedback.summary}")
                     if feedback.suggestions:
@@ -1200,6 +1206,7 @@ def cmd_run(
                 stream_callback=_learner_stream if bridge else None,
                 tool_callback=_learner_tool_callback if bridge else None,
                 explorer_context=memory_context,
+                context_usage_callback=_context_usage if bridge else None,
             )
         except Exception as exc:
             console.print(f"[red]learner analysis failed: {exc}[/red]")

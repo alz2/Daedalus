@@ -159,6 +159,13 @@ export function applyEvent(event: TraceEvent, store?: Store): void {
       break;
     }
 
+    case "context_usage":
+      s.setContextUsage(
+        event.data.used_tokens as number,
+        event.data.max_tokens as number
+      );
+      break;
+
     case "executor_progress":
       s.setPhaseProgress(
         "executor",

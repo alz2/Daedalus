@@ -23,7 +23,7 @@ from daedalus.core.registry import Registry, get_registry
 from daedalus.core.store import RunStore
 from daedalus.implementor.implementor import ImplementorRequest, SyntheticSkillImplementor
 from daedalus.library.librarian import Librarian
-from daedalus.llm.context import prune_old_images, summarize_and_compact
+from daedalus.llm.context import estimate_token_count, get_context_config, prune_old_images, summarize_and_compact
 from daedalus.llm.gateway import LLMCall, LLMGateway, LLMRole, ToolCall
 from daedalus.tracing.recorder import TraceRecorder
 
@@ -338,6 +338,7 @@ class Explorer:
         progress_callback: Callable[[int, int, str], None] | None = None,
         stream_callback: Callable[[str], None] | None = None,
         tool_callback: Callable[[str, str, dict[str, Any], str | None], None] | None = None,
+        context_usage_callback: Callable[[int, int], None] | None = None,
         solve_mode: bool = False,
     ) -> ExploreResult:
         """Run the exploration loop. Returns observations for the planner.
@@ -346,6 +347,7 @@ class Explorer:
         stream_callback receives streamed text tokens from the LLM.
         tool_callback receives (tool_name, tool_id, arguments, result_or_None).
           Called with result=None at start, then again with result at end.
+        context_usage_callback receives (used_tokens, max_tokens).
         If solve_mode is True, the explorer attempts to solve the task directly
         rather than just gathering information for a downstream planner.
         """
@@ -408,6 +410,11 @@ class Explorer:
 
             summarize_and_compact(messages, self._gateway)
             prune_old_images(messages)
+
+            if context_usage_callback:
+                used = estimate_token_count(messages)
+                max_tokens = get_context_config().max_context_tokens
+                context_usage_callback(used, max_tokens)
 
             response = self._gateway.complete(
                 LLMCall(
