@@ -54,14 +54,14 @@ export function App({ goal, configPath, projectRoot, tracePath }: AppProps): Rea
   useKeybindings(manager, inputActive);
 
   const startRun = useCallback(
-    (g: string) => {
+    (g: string, runMode: "learn" | "explore" | "plan" = "learn") => {
       const storeConfigPath = useAgentStore.getState().configPath;
       const effectiveConfig = storeConfigPath
         ? resolve(projectRoot, storeConfigPath)
         : configPath;
       pushGoal(g);
       goalHistory.current = [g, ...goalHistory.current.filter((h) => h !== g)].slice(0, 100);
-      manager.start(g, effectiveConfig);
+      manager.start(g, effectiveConfig, runMode);
       setInputMode("idle");
       setHistoryIdx(-1);
     },
@@ -109,7 +109,6 @@ export function App({ goal, configPath, projectRoot, tracePath }: AppProps): Rea
         const agent = raw.agent || {};
         if (agent.max_retries !== undefined) patch.maxRetries = agent.max_retries;
         if (agent.explore_steps !== undefined) patch.exploreSteps = agent.explore_steps;
-        if (agent.no_explore !== undefined) patch.noExplore = agent.no_explore;
         if (agent.no_strategy !== undefined) patch.noStrategy = agent.no_strategy;
         if (agent.verbose !== undefined) patch.verbose = agent.verbose;
         if (agent.record !== undefined) patch.record = agent.record;
@@ -162,6 +161,15 @@ export function App({ goal, configPath, projectRoot, tracePath }: AppProps): Rea
           setGoalInput("");
           setCursorPos(0);
           setHistoryIdx(-1);
+        } else if (trimmed.startsWith("/learn ")) {
+          const g = trimmed.slice("/learn ".length).trim();
+          if (g) startRun(g, "learn");
+        } else if (trimmed.startsWith("/explore ")) {
+          const g = trimmed.slice("/explore ".length).trim();
+          if (g) startRun(g, "explore");
+        } else if (trimmed.startsWith("/plan ")) {
+          const g = trimmed.slice("/plan ".length).trim();
+          if (g) startRun(g, "plan");
         } else if (trimmed.startsWith("/")) {
           setGoalInput("");
           setCursorPos(0);
@@ -288,7 +296,7 @@ export function App({ goal, configPath, projectRoot, tracePath }: AppProps): Rea
             </Box>
             <Box marginTop={1}>
               <Text dimColor>
-                Type a goal, or: /config  /traces  /help  /quit  •  ↑↓: history  •  Ctrl+C to exit
+                /learn &lt;goal&gt;  /explore &lt;goal&gt;  /plan &lt;goal&gt;  •  /config  /traces  /help  /quit  •  ↑↓: history
               </Text>
             </Box>
           </Box>

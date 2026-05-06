@@ -234,6 +234,59 @@ the environment or UI positions change.
 """
 
 
+EXPLORER_SOLVE_SYSTEM_PROMPT = """\
+You are the Explorer agent for Daedalus, a computer-control system. Your job is \
+to DIRECTLY SOLVE the given task by interacting with the environment.
+
+YOUR GOAL:
+Accomplish the user's task yourself using the available tools. You are the sole \
+actor — there is no downstream planner. Solve the problem step by step.
+
+STRATEGY:
+1. Start by calling view_screen() to see the current state.
+2. Interact with the environment: click buttons, type text, use hotkeys, navigate.
+3. If you need a specialized capability that doesn't exist, use implement_skill to create it.
+4. When you have completed the task, call explore_done with a summary of what you did.
+
+GUIDELINES:
+- Be ACTION-ORIENTED: take concrete steps to accomplish the goal
+- Be EFFICIENT: don't over-verify, trust your observations and move forward
+- DO NOT just observe — actually solve the problem
+- If you create new skills, test them once to confirm they work
+- Call explore_done when the task is complete with a summary of actions taken
+
+ANTI-PATTERNS TO AVOID:
+- Reading the same data multiple times to "verify" it
+- Getting stuck perfecting details instead of making progress
+- Reporting back without actually attempting to solve the task
+- Spending iterations double-checking your own observations
+
+LLM COORDINATE SCALING (IMPORTANT):
+Screenshots are automatically downscaled to match LLM vision processing
+resolution. All coordinates across skills (view_screen, locate_element,
+click_element, mouse) use this consistent downscaled coordinate space.
+The mouse skill automatically scales coordinates back up when interacting
+with the actual screen.
+
+This means:
+- You do NOT need to worry about coordinate scaling manually.
+- Coordinates from view_screen, locate_element, and your own visual
+  estimation all live in the same space.
+- Just use coordinates as you see them — the system handles the rest.
+
+COORDINATE WARNING:
+Do NOT report hardcoded pixel coordinates in your observations as a way to
+interact with the UI. Coordinates are fragile — window position, zoom level,
+and dynamic content make them unreliable. Instead, use:
+- Keyboard shortcuts and hotkeys (always reliable)
+- locate_element/click_element to find elements dynamically
+- Relative spatial relationships ("the button is below the header")
+
+Call explore_done when the task is complete. Provide a summary of what you \
+accomplished and any relevant observations.
+"""
+
+
 # ---------------------------------------------------------------------------
 # Explorer class
 # ---------------------------------------------------------------------------
@@ -285,6 +338,7 @@ class Explorer:
         progress_callback: Callable[[int, int, str], None] | None = None,
         stream_callback: Callable[[str], None] | None = None,
         tool_callback: Callable[[str, str, dict[str, Any], str | None], None] | None = None,
+        solve_mode: bool = False,
     ) -> ExploreResult:
         """Run the exploration loop. Returns observations for the planner.
         
@@ -292,6 +346,8 @@ class Explorer:
         stream_callback receives streamed text tokens from the LLM.
         tool_callback receives (tool_name, tool_id, arguments, result_or_None).
           Called with result=None at start, then again with result at end.
+        If solve_mode is True, the explorer attempts to solve the task directly
+        rather than just gathering information for a downstream planner.
         """
         abort = abort_event or threading.Event()
         task_id = f"explore-{uuid.uuid4().hex[:8]}"
@@ -324,9 +380,15 @@ class Explorer:
             tool_names = [t["function"]["name"] for t in tools]
             log.info("explorer tools: %s", ", ".join(tool_names))
 
+        system_prompt = EXPLORER_SOLVE_SYSTEM_PROMPT if solve_mode else EXPLORER_SYSTEM_PROMPT
+        user_msg = (
+            f"Goal: {goal}\n\nSolve this task directly."
+            if solve_mode
+            else f"Goal: {goal}\n\nExplore the environment to understand the problem."
+        )
         messages: list[dict[str, Any]] = [
-            {"role": "system", "content": EXPLORER_SYSTEM_PROMPT},
-            {"role": "user", "content": f"Goal: {goal}\n\nExplore the environment to understand the problem."},
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_msg},
         ]
 
         new_skills: list[str] = []

@@ -457,7 +457,7 @@ def cmd_run(
     tasks_db: Optional[Path] = typer.Option(None, "--tasks-db"),
     verbose: bool = typer.Option(False, "--verbose", "-v"),
     no_strategy: bool = typer.Option(False, "--no-strategy", help="Skip the strategy phase (no proactive skill synthesis)."),
-    no_explore: bool = typer.Option(False, "--no-explore", help="Skip the exploration phase."),
+    mode: str = typer.Option("learn", "--mode", "-m", help="Agent mode: learn (explore+plan+learn), explore (explorer solves directly), plan (skip explorer, go to planner)."),
     explore_steps: int = typer.Option(20, "--explore-steps", help="Max explorer iterations."),
     max_retries: int = typer.Option(3, "--max-retries", "-r", help="Max learner retry loops on failure."),
     learn_on_succeed: bool = typer.Option(False, "--learn-on-succeed", help="Run learner analysis even on success."),
@@ -515,8 +515,8 @@ def cmd_run(
             max_retries = int(_agent_cfg["max_retries"])
         if explore_steps == 20 and "explore_steps" in _agent_cfg:
             explore_steps = int(_agent_cfg["explore_steps"])
-        if not no_explore and _agent_cfg.get("no_explore"):
-            no_explore = True
+        if mode == "learn" and _agent_cfg.get("no_explore"):
+            mode = "plan"
         if not no_strategy and _agent_cfg.get("no_strategy"):
             no_strategy = True
         if not verbose and _agent_cfg.get("verbose"):
@@ -582,7 +582,7 @@ def cmd_run(
 
         # Step 0: Strategy phase — subtask decomposition only (no skill synthesis).
         # Skipped when explorer is active since exploration provides richer context.
-        if not no_explore:
+        if mode in ("learn", "explore"):
             console.print("[dim]strategy phase skipped (explorer is active)[/dim]")
             if bridge:
                 bridge.emit_phase("strategy", "skipped")
@@ -613,8 +613,8 @@ def cmd_run(
                     bridge.emit_phase("strategy", "failed", str(exc))
 
         # Step 0.5: Exploration phase — freeform environment discovery.
-        if no_explore:
-            console.print("[dim]exploration phase skipped (--no-explore)[/dim]")
+        if mode == "plan":
+            console.print("[dim]exploration phase skipped (plan mode)[/dim]")
             if bridge:
                 bridge.emit_phase("explorer", "skipped")
         else:
@@ -707,6 +707,7 @@ def cmd_run(
                     progress_callback=_explorer_progress,
                     stream_callback=_stream_thinking if bridge else None,
                     tool_callback=_tool_callback if bridge else None,
+                    solve_mode=(mode == "explore"),
                 )
 
                 import contextlib as _ctxlib
@@ -735,6 +736,17 @@ def cmd_run(
                 console.print(f"[yellow]exploration phase failed: {exc}[/yellow]")
                 if bridge:
                     bridge.emit_phase("explorer", "failed", str(exc))
+
+        # In "explore" mode the explorer is the sole actor — skip planning/execution.
+        if mode == "explore":
+            console.print("[green]explore mode complete — task handled by explorer.[/green]")
+            if bridge:
+                bridge.emit_phase("planner", "skipped")
+                bridge.emit_phase("executor", "skipped")
+                bridge.emit_phase("evaluator", "skipped")
+                bridge.emit_phase("learner", "skipped")
+                bridge.emit_event("finished", {"success": True, "mode": "explore"})
+            return
 
         # Step 1: Generate and approve success criteria.
         try:
@@ -936,6 +948,15 @@ def cmd_run(
         _abort_event = abort_event if frontend_mode else overlay.abort_event
         _status_cb = bridge.update_status if bridge else overlay.update_status
 
+        def _exec_event_callback(kind: str, data: dict) -> None:
+            if not bridge:
+                return
+            if kind == "run_trace_dir":
+                trace_dir_str = data.get("trace_dir")
+                if trace_dir_str:
+                    bridge.set_run_trace_dir(Path(trace_dir_str))
+            bridge.emit_event(kind, data)
+
         if isinstance(prog, PythonProgram):
             executor_obj: SequentialExecutor | PythonProgramExecutor = PythonProgramExecutor(
                 backend=be,
@@ -944,7 +965,7 @@ def cmd_run(
                 tasks_db=db_path,
                 abort_event=_abort_event,
                 status_callback=_status_cb,
-                event_callback=bridge.emit_event if bridge else None,
+                event_callback=_exec_event_callback if bridge else None,
             )
         else:
             executor_obj = SequentialExecutor(
@@ -954,7 +975,7 @@ def cmd_run(
                 tasks_db=db_path,
                 abort_event=_abort_event,
                 status_callback=_status_cb,
-                event_callback=bridge.emit_event if bridge else None,
+                event_callback=_exec_event_callback if bridge else None,
             )
 
         try:

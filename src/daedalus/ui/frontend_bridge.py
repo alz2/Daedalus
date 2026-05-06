@@ -37,6 +37,7 @@ class FrontendBridge:
         self._running = False
         self._on_command: Callable[[str, dict[str, Any]], None] | None = None
         self._events_file: Any | None = None
+        self._run_events_file: Any | None = None
         self._events_lock = threading.Lock()
 
     def start(self, on_command: Callable[[str, dict[str, Any]], None] | None = None) -> None:
@@ -51,11 +52,22 @@ class FrontendBridge:
         trace_dir.mkdir(parents=True, exist_ok=True)
         self._events_file = open(trace_dir / "bridge_events.jsonl", "a")
 
+    def set_run_trace_dir(self, run_dir: Path) -> None:
+        """Set per-run trace directory so bridge events are also saved inside it."""
+        with self._events_lock:
+            if self._run_events_file:
+                self._run_events_file.close()
+            run_dir.mkdir(parents=True, exist_ok=True)
+            self._run_events_file = open(run_dir / "bridge_events.jsonl", "a")
+
     def stop(self) -> None:
         self._running = False
         if self._events_file:
             self._events_file.close()
             self._events_file = None
+        if self._run_events_file:
+            self._run_events_file.close()
+            self._run_events_file = None
 
     def _read_loop(self) -> None:
         """Read lines from stdin, dispatch responses and commands."""
@@ -124,14 +136,19 @@ class FrontendBridge:
             sys.stdout.flush()
 
     def _record_event(self, method: str, params: dict[str, Any]) -> None:
-        """Append a notification to the bridge events log file."""
-        if not self._events_file:
+        """Append a notification to the bridge events log file(s)."""
+        if not self._events_file and not self._run_events_file:
             return
         record = {"method": method, "params": params, "ts": _now_iso()}
+        line = json.dumps(record) + "\n"
         with self._events_lock:
             try:
-                self._events_file.write(json.dumps(record) + "\n")
-                self._events_file.flush()
+                if self._events_file:
+                    self._events_file.write(line)
+                    self._events_file.flush()
+                if self._run_events_file:
+                    self._run_events_file.write(line)
+                    self._run_events_file.flush()
             except (OSError, ValueError):
                 pass
 

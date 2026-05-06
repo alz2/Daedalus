@@ -35,7 +35,7 @@ No hard-coded workflows. No brittle selectors. Just vision, reasoning, and a ski
 >
 > The agent had never seen this site before. It explored the UI, learned how to interact with the grid, wrote a sudoku solver skill on the fly, and completed the puzzle — all from a single natural-language instruction.
 
-https://github.com/IcarusAICo/Daedalus/raw/main/assets/demo_sudoku_solve.mp4
+<video src="https://github.com/IcarusAICo/Daedalus/raw/main/assets/demo_sudoku_solve.mp4" controls width="100%"></video>
 
 ---
 
@@ -160,9 +160,10 @@ daedalus verify-litellm  # Check for supply-chain compromise
 | `--goal` | — | Natural-language task description |
 | `--program` | — | Path to a pre-built plan YAML |
 | `--config` | — | Path to YAML config |
+| `--mode` / `-m` | `learn` | `learn` (explore+plan+learn), `explore` (explorer solves directly), `plan` (skip explorer) |
 | `--backend` | `vnc` | `vnc` or `mock` |
 | `--max-retries` / `-r` | 3 | Learner retry loops on failure |
-| `--explore-steps` | 50 | Max explorer iterations |
+| `--explore-steps` | 20 | Max explorer iterations |
 | `--record` | off | Record screen during execution |
 | `--yes` / `-y` | off | Auto-approve all prompts |
 

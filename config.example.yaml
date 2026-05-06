@@ -41,7 +41,6 @@ executor:
 agent:
   max_retries: 3       # learner retry loops on failure
   explore_steps: 20    # max explorer iterations
-  no_explore: false    # skip exploration phase
   no_strategy: false   # skip strategy phase
   verbose: false
   record: false        # record screen via ffmpeg

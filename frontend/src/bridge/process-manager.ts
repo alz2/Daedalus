@@ -48,7 +48,6 @@ function buildTempConfig(config: DaedalusConfig, projectRoot: string): string {
     agent: {
       max_retries: config.maxRetries,
       explore_steps: config.exploreSteps,
-      no_explore: config.noExplore,
       no_strategy: config.noStrategy,
       verbose: config.verbose,
       record: config.record,
@@ -88,9 +87,9 @@ export class ProcessManager {
 
   constructor(private projectRoot: string) {}
 
-  start(goal: string, configPath?: string): void {
+  start(goal: string, configPath?: string, mode: "learn" | "explore" | "plan" = "learn"): void {
     const store = useAgentStore.getState();
-    const args = ["run", "--goal", goal, "--frontend-mode"];
+    const args = ["run", "--goal", goal, "--frontend-mode", "--mode", mode];
 
     // Always provide --config: use the explicit config file, or generate one
     const effectiveConfig = configPath || buildTempConfig(store.config, this.projectRoot);
@@ -113,7 +112,6 @@ export class ProcessManager {
       args.push("--backend", "mock");
     }
 
-    if (store.config.noExplore) args.push("--no-explore");
     if (store.config.noStrategy) args.push("--no-strategy");
     if (store.config.noOverlay) args.push("--no-overlay");
     if (store.config.record) args.push("--record");

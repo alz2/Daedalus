@@ -249,17 +249,6 @@ class PythonProgramExecutor:
             self._llm.set_tracer(tracer)
         task_state = TaskState(self._tasks_db, tracer.task_id)
         store = RunStore(self._tasks_db, tracer.task_id)
-        ctx = ExecutionContext(
-            task_id=tracer.task_id,
-            backend=self._backend,
-            task_state=task_state,
-            tracer=tracer,
-            store=store,
-            llm=self._llm,
-            config=self._config,
-            abort_event=self._abort_event,
-            coordinate_scale=compute_coordinate_scale(self._backend.size[0]) if hasattr(self._backend, "size") else 1.0,
-        )
 
         result = RunResult(
             task_id=tracer.task_id,
@@ -279,6 +268,12 @@ class PythonProgramExecutor:
             },
         )
 
+        if self._event_callback:
+            self._event_callback("run_trace_dir", {
+                "task_id": tracer.task_id,
+                "trace_dir": str(tracer.task_dir),
+            })
+
         connected = False
         daemons: list[DaemonHandle] = []
         try:
@@ -287,6 +282,18 @@ class PythonProgramExecutor:
                 connected = True
             except Exception as exc:
                 raise BackendError(f"backend.connect failed: {exc}") from exc
+
+            ctx = ExecutionContext(
+                task_id=tracer.task_id,
+                backend=self._backend,
+                task_state=task_state,
+                tracer=tracer,
+                store=store,
+                llm=self._llm,
+                config=self._config,
+                abort_event=self._abort_event,
+                coordinate_scale=compute_coordinate_scale(self._backend.size[0]) if hasattr(self._backend, "size") else 1.0,
+            )
 
             if program.daemons:
                 daemon_specs = [

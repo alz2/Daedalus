@@ -81,6 +81,19 @@ _KEY_ALIASES = {
     "scrolllock": "scrlk",
     "pause": "pause",
     "printscreen": "sysrq",
+    # Function keys — vncdotool uses lowercase "fN" keysym names
+    "f1": "f1",
+    "f2": "f2",
+    "f3": "f3",
+    "f4": "f4",
+    "f5": "f5",
+    "f6": "f6",
+    "f7": "f7",
+    "f8": "f8",
+    "f9": "f9",
+    "f10": "f10",
+    "f11": "f11",
+    "f12": "f12",
 }
 
 _BUTTON_TO_INT = {Button.LEFT: 1, Button.MIDDLE: 2, Button.RIGHT: 3}
@@ -244,7 +257,11 @@ class VNCBackend:
                 width=round(region.width * self._scale),
                 height=round(region.height * self._scale),
             )
-        shot = self._raw_screenshot(native_region)
+        try:
+            shot = self._raw_screenshot(native_region)
+        except BackendError:
+            self._reconnect()
+            shot = self._raw_screenshot(native_region)
 
         if self._scale != 1.0:
             new_w = round(shot.width / self._scale)
@@ -343,6 +360,14 @@ class VNCBackend:
             return
         translated = [self._translate_key(k) for k in keys]
         try:
+            self._do_press(client, translated)
+        except BackendError:
+            self._reconnect()
+            client = self._require_client("press")
+            self._do_press(client, translated)
+
+    def _do_press(self, client, translated: list[str]) -> None:  # type: ignore[no-untyped-def]
+        try:
             if len(translated) == 1:
                 client.keyPress(translated[0])
                 return
@@ -366,6 +391,20 @@ class VNCBackend:
             raise BackendError(f"VNC backend not connected (op={op})")
         return self._client
 
+    def _reconnect(self) -> None:
+        """Attempt to reconnect after a connection failure."""
+        log.warning("VNC connection appears broken, attempting reconnect...")
+        try:
+            self.disconnect()
+        except Exception:
+            self._client = None
+        try:
+            self.connect()
+            log.info("VNC reconnect successful")
+        except Exception as exc:
+            raise BackendError(f"VNC reconnect failed: {exc}") from exc
+
     @staticmethod
     def _translate_key(name: str) -> str:
-        return _KEY_ALIASES.get(name.lower(), name)
+        lower = name.lower()
+        return _KEY_ALIASES.get(lower, lower)

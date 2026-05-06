@@ -310,7 +310,6 @@ function getFields(
     { label: "", path: "_sep4", value: "", type: "string" },
     { label: "Record", path: "record", value: config.record, type: "boolean" },
     { label: "Record FPS", path: "recordFps", value: config.recordFps, type: "number" },
-    { label: "No Explore", path: "noExplore", value: config.noExplore, type: "boolean" },
     { label: "No Strategy", path: "noStrategy", value: config.noStrategy, type: "boolean" },
     { label: "Verbose", path: "verbose", value: config.verbose, type: "boolean" },
     { label: "", path: "_sep5", value: "", type: "string" },
@@ -370,7 +369,6 @@ function loadConfigFromFile(
     const agent = raw.agent || {};
     if (agent.max_retries !== undefined) patch.maxRetries = agent.max_retries;
     if (agent.explore_steps !== undefined) patch.exploreSteps = agent.explore_steps;
-    if (agent.no_explore !== undefined) patch.noExplore = agent.no_explore;
     if (agent.no_strategy !== undefined) patch.noStrategy = agent.no_strategy;
     if (agent.verbose !== undefined) patch.verbose = agent.verbose;
     if (agent.record !== undefined) patch.record = agent.record;

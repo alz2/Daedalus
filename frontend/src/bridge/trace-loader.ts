@@ -23,10 +23,15 @@ export function loadTrace(tracePath: string): { meta: TraceMeta; goal: string | 
   }
   const meta: TraceMeta = JSON.parse(readFileSync(metaPath, "utf-8"));
 
-  // Try to load bridge_events.jsonl
-  const bridgeEventsPath = join(tracePath, "bridge_events.jsonl");
+  // Try per-run bridge_events.jsonl first, fall back to root-level
+  let bridgeEventsPath = join(tracePath, "bridge_events.jsonl");
   if (!existsSync(bridgeEventsPath)) {
-    throw new Error(`No bridge_events.jsonl found at ${bridgeEventsPath}. This trace was recorded without frontend bridge logging.`);
+    const parentBridge = join(tracePath, "..", "bridge_events.jsonl");
+    if (existsSync(parentBridge)) {
+      bridgeEventsPath = parentBridge;
+    } else {
+      throw new Error(`No bridge_events.jsonl found at ${bridgeEventsPath}. This trace was recorded without frontend bridge logging.`);
+    }
   }
 
   const content = readFileSync(bridgeEventsPath, "utf-8");

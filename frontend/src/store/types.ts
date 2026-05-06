@@ -131,7 +131,6 @@ export interface DaedalusConfig {
   verbose: boolean;
   noOverlay: boolean;
   noStrategy: boolean;
-  noExplore: boolean;
   yolo: boolean;
 }
 
@@ -205,6 +204,5 @@ export const DEFAULT_CONFIG: DaedalusConfig = {
   verbose: false,
   noOverlay: true,
   noStrategy: false,
-  noExplore: false,
   yolo: false,
 };
