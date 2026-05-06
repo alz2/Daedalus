@@ -32,12 +32,12 @@ No hard-coded workflows. No brittle selectors. Just vision, reasoning, and a ski
 ## Demo
 
 > **Task:** *"Launch Firefox, navigate to nytimes.com/puzzles/sudoku, pick the hard puzzle and solve it."*
->
-> The agent had never seen this site before. It explored the UI, learned how to interact with the grid, wrote a sudoku solver skill on the fly, and completed the puzzle — all from a single natural-language instruction.
 
-![Daedalus solving a NYT Hard Sudoku](assets/demo_preview.gif)
-
-*[Watch the full video (55s)](https://github.com/IcarusAICo/Daedalus/raw/refs/heads/main/assets/demo_sudoku_solve.mp4)*
+<p align="center">
+  <img src="assets/demo_preview.gif" alt="Daedalus solving a NYT Hard Sudoku" width="600">
+  <br>
+  <em>The agent explores an unfamiliar site, learns the UI, writes a solver skill on the fly, and completes the puzzle autonomously. (4x speed)</em>
+</p>
 
 ---
 
