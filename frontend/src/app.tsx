@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from "react";
 import { resolve } from "node:path";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { Box, Text, useInput } from "ink";
 import Spinner from "ink-spinner";
 import { parse as parseYaml } from "yaml";
@@ -72,14 +72,20 @@ export function App({ goal, configPath, projectRoot, tracePath }: AppProps): Rea
   // On mount: restore last config if no explicit one was provided
   React.useEffect(() => {
     const store = useAgentStore.getState();
-    if (configPath && !store.configPath) {
-      store.setConfigPath(configPath);
-      setLastConfig(configPath);
-    } else if (!configPath && !store.configPath && persistedState.current.lastConfigPath) {
-      const lastCfg = persistedState.current.lastConfigPath;
-      store.setConfigPath(lastCfg);
+
+    const cfgToLoad = configPath
+      ? configPath
+      : (!store.configPath && persistedState.current.lastConfigPath)
+        ? persistedState.current.lastConfigPath
+        : (!store.configPath && existsSync(resolve(projectRoot, "config.local.yaml")))
+          ? "config.local.yaml"
+          : null;
+
+    if (cfgToLoad) {
+      store.setConfigPath(cfgToLoad);
+      setLastConfig(cfgToLoad);
       try {
-        const fullPath = resolve(projectRoot, lastCfg);
+        const fullPath = resolve(projectRoot, cfgToLoad);
         const raw = parseYaml(readFileSync(fullPath, "utf-8")) || {};
         const patch: Record<string, unknown> = {};
         const be = raw.backend || {};
