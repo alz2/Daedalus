@@ -35,7 +35,7 @@ No hard-coded workflows. No brittle selectors. Just vision, reasoning, and a ski
 >
 > The agent had never seen this site before. It explored the UI, learned how to interact with the grid, wrote a sudoku solver skill on the fly, and completed the puzzle — all from a single natural-language instruction.
 
-<video src="https://github.com/IcarusAICo/Daedalus/raw/refs/heads/main/assets/demo_sudoku_solve.mp4" controls="controls" muted="muted" playsinline="playsinline"></video>
+[![Watch the demo](assets/demo_thumbnail.jpg)](https://github.com/IcarusAICo/Daedalus/raw/refs/heads/main/assets/demo_sudoku_solve.mp4)
 
 ---
 
