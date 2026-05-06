@@ -31,7 +31,7 @@ No hard-coded workflows. No brittle selectors. Just vision, reasoning, and a ski
 
 ## Demo
 
-> **Task:** *"Launch Firefox, navigate to nytimes.com/puzzles/sudoku, pick the hard puzzle and solve it."*
+> <p align="center"><strong>Task:</strong> <em>"Launch Firefox, navigate to nytimes.com/puzzles/sudoku, pick the hard puzzle and solve it."</em></p>
 
 <p align="center">
   <img src="assets/demo_preview.gif" alt="Daedalus solving a NYT Hard Sudoku" width="600">
