@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+import time
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -23,6 +25,11 @@ class MouseInput(BaseModel):
     y2: int | None = Field(default=None, ge=0, le=4095, description="Drag end y (required for drag).")
     button: Button = Field(default=Button.LEFT, description="Mouse button: left, middle, or right.")
     double: bool = Field(default=False, description="If true, double-click (only for action=click).")
+    speed: float = Field(
+        default=800.0,
+        gt=0,
+        description="Drag speed in pixels per second. Lower values = slower, more reliable drags.",
+    )
 
     @model_validator(mode="after")
     def _validate_drag_coords(self) -> "MouseInput":
@@ -47,11 +54,12 @@ class MouseOutput(BaseModel):
 class Mouse(AtomicSkill):
     SPEC = SkillSpec(
         id="mouse",
-        version=SkillVersion(raw="0.1.0"),
+        version=SkillVersion(raw="0.2.0"),
         kind="atomic",
         description=(
             "General-purpose mouse skill: move without clicking, click "
-            "(left/right/double), or drag from point A to point B."
+            "(left/right/double), or drag from point A to point B with "
+            "configurable speed (linear interpolation for reliable drags)."
         ),
         side_effects=["screen_input"],
         preconditions=["backend.connected", "0 <= x < screen.width", "0 <= y < screen.height"],
@@ -94,11 +102,36 @@ class Mouse(AtomicSkill):
                 double=inputs.double,
             )
 
-        # drag
+        # drag with linear interpolation
         assert inputs.x2 is not None and inputs.y2 is not None
         x2 = int(inputs.x2 * s)
         y2 = int(inputs.y2 * s)
-        ctx.backend.drag(x, y, x2, y2, button=inputs.button)
+
+        dx = x2 - x
+        dy = y2 - y
+        distance = math.hypot(dx, dy)
+        speed = inputs.speed * s
+
+        # Compute intermediate steps: ~60 updates/sec, at least 5 steps
+        duration = max(distance / speed, 0.05)
+        num_steps = max(5, int(duration * 60))
+        step_delay = duration / num_steps
+
+        backend = ctx.backend
+        backend.move(x, y)
+        time.sleep(0.02)
+        backend.mouse_down(button=inputs.button)
+        time.sleep(0.02)
+
+        for i in range(1, num_steps + 1):
+            t = i / num_steps
+            ix = int(x + dx * t)
+            iy = int(y + dy * t)
+            backend.move(ix, iy)
+            time.sleep(step_delay)
+
+        backend.mouse_up(button=inputs.button)
+
         return MouseOutput(
             action="drag",
             start=(x, y),

@@ -326,6 +326,22 @@ class VNCBackend:
         except Exception as exc:
             raise BackendError(f"VNC drag failed: {exc}") from exc
 
+    def mouse_down(self, button: Button = Button.LEFT) -> None:
+        client = self._require_client("mouse_down")
+        btn = _BUTTON_TO_INT[button]
+        try:
+            client.mouseDown(btn)
+        except Exception as exc:
+            raise BackendError(f"VNC mouse_down failed: {exc}") from exc
+
+    def mouse_up(self, button: Button = Button.LEFT) -> None:
+        client = self._require_client("mouse_up")
+        btn = _BUTTON_TO_INT[button]
+        try:
+            client.mouseUp(btn)
+        except Exception as exc:
+            raise BackendError(f"VNC mouse_up failed: {exc}") from exc
+
     def scroll(self, dx: int, dy: int) -> None:
         client = self._require_client("scroll")
         # vncdotool exposes scroll as buttons 4 (up) and 5 (down).

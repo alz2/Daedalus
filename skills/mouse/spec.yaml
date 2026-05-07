@@ -1,8 +1,8 @@
 id: mouse
-version: 0.1.0
+version: 0.2.0
 kind: atomic
 description: 'General-purpose mouse skill: move without clicking, click (left/right/double),
-  or drag from point A to point B.'
+  or drag from point A to point B with configurable speed.'
 side_effects:
 - screen_input
 preconditions:
@@ -46,6 +46,22 @@ examples:
     end:
     - 500
     - 300
+    button: left
+- inputs:
+    action: drag
+    x: 200
+    y: 200
+    x2: 600
+    y2: 400
+    speed: 400
+  expected:
+    action: drag
+    start:
+    - 200
+    - 200
+    end:
+    - 600
+    - 400
     button: left
 tests:
 - basic.json

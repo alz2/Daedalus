@@ -109,4 +109,10 @@ class RemoteDesktop(Protocol):
     ) -> None:
         """Press at (x1,y1), drag to (x2,y2), and release."""
 
+    def mouse_down(self, button: Button = Button.LEFT) -> None:
+        """Press and hold a mouse button at the current cursor position."""
+
+    def mouse_up(self, button: Button = Button.LEFT) -> None:
+        """Release a mouse button at the current cursor position."""
+
     def scroll(self, dx: int, dy: int) -> None: ...

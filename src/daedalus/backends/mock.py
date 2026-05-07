@@ -148,6 +148,14 @@ class MockBackend:
             )
         )
 
+    def mouse_down(self, button: Button = Button.LEFT) -> None:
+        self._require_connected("mouse_down")
+        self.events.append(MockEvent(op="mouse_down", args={"button": button.value}))
+
+    def mouse_up(self, button: Button = Button.LEFT) -> None:
+        self._require_connected("mouse_up")
+        self.events.append(MockEvent(op="mouse_up", args={"button": button.value}))
+
     def scroll(self, dx: int, dy: int) -> None:
         self._require_connected("scroll")
         self.events.append(MockEvent(op="scroll", args={"dx": dx, "dy": dy}))
