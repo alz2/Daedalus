@@ -76,7 +76,7 @@ User Goal (natural language)
        ▼
 ┌─────────────────┐    ┌─────────────────┐
 │    Explorer     │◄───│  Agent Memory   │
-│  (tool-loop)   │    └─────────────────┘
+│  (tool-loop)    │    └─────────────────┘
 │                 │──► Skill retrieval (BM25)
 │    plan()       │──► Program (YAML or Python)
 └────────┬────────┘
